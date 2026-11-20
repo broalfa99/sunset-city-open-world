@@ -74,6 +74,10 @@ if (shot) applyShot(shot, world);
 const input = world.input;
 const audio = world.audio;
 
+// Debug/testing handle (harmless in play): lets a test driver read the
+// live world state without touching the game itself.
+window.__sunset = world;
+
 function resize() {
   const scale = Math.min(window.innerWidth / VW, window.innerHeight / VH);
   canvas.style.width = `${Math.floor(VW * scale)}px`;

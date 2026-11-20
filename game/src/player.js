@@ -88,7 +88,13 @@ export function updatePlayer(dt, input, world) {
   // Interact / enter a car: E.
   if (wasPressed(input, 'KeyE')) {
     const car = tryEnterCar(world);
-    if (!car) handleInteract(world);
+    if (!car) {
+      handleInteract(world);
+    } else {
+      // Eat the press: without this, updatePlayerCar (same frame) would
+      // read the same E edge and exit the car again at once.
+      input.justPressed.delete('KeyE');
+    }
   }
 }
 

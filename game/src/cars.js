@@ -64,16 +64,37 @@ export function spawnTraffic(world, count = 16) {
 }
 
 export function spawnParkedCars(world, count = 14) {
-  for (let i = 0; i < count; i++) {
+  // Park along the curb: on the road, offset perpendicular to it, facing
+  // along the road — never inside a block or a building.
+  let placed = 0;
+  let tries = 0;
+  while (placed < count && tries < count * 12) {
+    tries++;
     const type = weightedType(world.rng, 'parkedWeight');
     const pt = randomRoadPoint(world.rng);
-    // Park along the curb: offset from the road centreline.
-    const along = Math.abs(pt.x % 400) < 100;
-    const x = along ? pt.x + (world.rng() < 0.5 ? -26 : 26) : pt.x;
-    const y = along ? pt.y : pt.y + (world.rng() < 0.5 ? -26 : 26);
-    const angle = along ? 0 : Math.PI / 2;
-    const car = createCar(world.rng, x, y, angle, type, 'parked');
-    world.cars.push(car);
+    const onVertical = WORLD.GRID.some((g) => Math.abs(pt.x - g) < 40);
+    const side = world.rng() < 0.5 ? -1 : 1;
+    const curb = 20; // inside the 64px road, near its edge
+    let x;
+    let y;
+    let angle;
+    if (onVertical) {
+      const g = WORLD.GRID.reduce((best, gg) => (Math.abs(pt.x - gg) < Math.abs(pt.x - best) ? gg : best), WORLD.GRID[0]);
+      x = g + side * curb;
+      y = pt.y;
+      angle = side > 0 ? Math.PI / 2 : -Math.PI / 2;
+    } else {
+      const g = WORLD.GRID.reduce((best, gg) => (Math.abs(pt.y - gg) < Math.abs(pt.y - best) ? gg : best), WORLD.GRID[0]);
+      x = pt.x;
+      y = g + side * curb;
+      angle = side > 0 ? 0 : Math.PI;
+    }
+    const spec = VEHICLES[type];
+    if (citySolid(world.city, x, y, spec.radius)) continue;
+    // Don't park on top of another car.
+    if (world.cars.some((c) => dist(c.x, c.y, x, y) < 70)) continue;
+    world.cars.push(createCar(world.rng, x, y, angle, type, 'parked'));
+    placed++;
   }
 }
 
