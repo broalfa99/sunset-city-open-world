@@ -3,17 +3,117 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Block Dodger</title>
+<title>Sunset City — Open-World Crime Game</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #11141b; }
-  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  /* Read aloud, never shown: the status line screen readers announce. */
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #14101f; }
+  #wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  #game { display: block; background: #241f30; touch-action: none; }
   #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  #banner {
+    position: absolute; top: 9%; left: 50%; transform: translateX(-50%);
+    font: bold 26px system-ui, sans-serif; color: #ffd166;
+    text-shadow: 0 2px 0 #000, 0 0 18px rgba(255, 180, 60, 0.6);
+    opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    text-align: center; white-space: nowrap; z-index: 5;
+  }
+  #dialogue {
+    position: absolute; bottom: 7%; left: 50%; transform: translateX(-50%);
+    width: min(620px, 80%); background: rgba(10, 10, 18, 0.88);
+    border: 1px solid #ffd166; border-radius: 10px; padding: 12px 18px;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 5;
+  }
+  #dialogue-name { font: bold 14px system-ui, sans-serif; color: #ffd166; margin-bottom: 4px; }
+  #dialogue-text { font: 15px system-ui, sans-serif; color: #ffe9c9; line-height: 1.45; }
+
+  .screen {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(10, 8, 18, 0.72); z-index: 10;
+  }
+  .panel {
+    background: rgba(20, 16, 31, 0.96); border: 1px solid #ff9a3d; border-radius: 14px;
+    padding: 30px 40px; text-align: center; max-width: 560px;
+    box-shadow: 0 0 60px rgba(255, 140, 50, 0.25);
+  }
+  .panel h1 { margin: 0 0 6px; font: bold 52px system-ui, sans-serif; color: #ffb43d; letter-spacing: 2px; }
+  .panel h2 { margin: 0 0 10px; font: bold 40px system-ui, sans-serif; color: #ff5a5a; letter-spacing: 2px; }
+  .panel h2.gold { color: #ffd166; }
+  .panel p { font: 15px/1.55 system-ui, sans-serif; color: #ffe9c9; margin: 8px 0; }
+  .panel .tagline { font-style: italic; color: #d8d8e8; }
+  .panel button {
+    font: bold 16px system-ui, sans-serif; color: #14101f; background: #ffb43d;
+    border: none; border-radius: 8px; padding: 12px 26px; margin: 8px 6px 0; cursor: pointer;
+  }
+  .panel button:hover { background: #ffc95e; }
+  .panel button.secondary { background: #3a3348; color: #ffe9c9; }
+  .panel button.secondary:hover { background: #4a4360; }
+  .controls { text-align: left; font: 13.5px/1.7 system-ui, sans-serif; color: #d8d8e8; margin: 14px auto 4px; display: inline-block; }
+  .controls b { color: #ffd166; }
 </style>
 </head>
 <body>
-<canvas id="game" aria-label="Block Dodger: move the paddle left and right to dodge falling blocks and catch coins"></canvas>
-<p id="status" role="status" aria-live="polite"></p>
+<div id="wrap">
+  <canvas id="game" width="1280" height="720" aria-label="Sunset City: an open-world crime game. Drive, steal cars, outrun the police and run jobs for Mara."></canvas>
+  <p id="status" role="status" aria-live="polite"></p>
+  <div id="banner"></div>
+  <div id="dialogue"><div id="dialogue-name"></div><div id="dialogue-text"></div></div>
+
+  <div class="screen" id="title-screen">
+    <div class="panel">
+      <h1>SUNSET CITY</h1>
+      <p class="tagline">One driver. Six jobs. A whole city that wants him caught.</p>
+      <p>You are <b>Rio</b>, a getaway driver. Steal cars, lose the cops, run jobs for the fixer <b>Mara</b> — and pull off the Sunset Score.</p>
+      <div>
+        <button type="button" id="play-btn">Play</button>
+        <button type="button" id="continue-btn" class="secondary">Continue</button>
+      </div>
+      <div class="controls">
+        <b>WASD / Arrows</b> — move / drive &nbsp;•&nbsp; <b>Mouse</b> — aim<br>
+        <b>Click / Space</b> — shoot &nbsp;•&nbsp; <b>F</b> — melee &nbsp;•&nbsp; <b>E</b> — enter car / interact<br>
+        <b>R</b> — reload &nbsp;•&nbsp; <b>Enter</b> — start next job &nbsp;•&nbsp; <b>P</b> — pause &nbsp;•&nbsp; <b>M</b> — mute
+      </div>
+      <p class="tagline">An original game. No real brands, no borrowed city.</p>
+    </div>
+  </div>
+
+  <div class="screen" id="pause-screen">
+    <div class="panel">
+      <h2 class="gold">PAUSED</h2>
+      <p>Sunset City waits for no one. Except right now.</p>
+      <div>
+        <button type="button" id="resume-btn">Resume</button>
+        <button type="button" id="save-btn" class="secondary">Save Game</button>
+      </div>
+      <div>
+        <button type="button" id="restart-btn" class="secondary">Restart Job</button>
+        <button type="button" id="mute-btn" class="secondary">Mute (M)</button>
+        <button type="button" id="quit-btn" class="secondary">Quit to Title</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="gameover-screen">
+    <div class="panel">
+      <h2 id="gameover-title">BUSTED</h2>
+      <p id="gameover-text"></p>
+      <div>
+        <button type="button" id="retry-btn">Retry the Job</button>
+        <button type="button" id="gameover-quit-btn" class="secondary">Quit to Title</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="ending-screen">
+    <div class="panel">
+      <h2 class="gold">SUNSET CITY IS YOURS</h2>
+      <p id="ending-text"></p>
+      <p>Free roam continues — the city, the cars and the cops are still out there.</p>
+      <div>
+        <button type="button" id="ending-btn">Keep Driving</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>
